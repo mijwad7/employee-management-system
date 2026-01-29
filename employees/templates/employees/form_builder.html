@@ -206,16 +206,11 @@
         const newFields = [];
         const items = fieldsContainer.children;
         for (let item of items) {
-            // We need to reconstruct the objects. 
-            // Since we just rendered them, we can rely on text content or storing data attributes.
-            // Better: Let's store the full object in a data attribute json string
-            // Actually, simplest is to just rely on the 'fields' array but reordered. 
-            // BUT wait, splicing changes the array. Dragging changes the DOM but not the array. 
-            // So when dragging ends, we must rebuild the array from the DOM.
-            // Let's store the JSON in the DOM element to be safe.
+            if (item.fieldData) {
+                newFields.push(item.fieldData);
+            }
         }
-
-        // Re-implement render to store data
+        fields = newFields;
     }
 
     // Better Rendering Logic for Reordering Support

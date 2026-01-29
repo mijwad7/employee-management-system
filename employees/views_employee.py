@@ -18,21 +18,12 @@ class EmployeeListCreateAPIView(generics.ListCreateAPIView):
         if search_query:
             # Search in name, email
             q = Q(name__icontains=search_query) | Q(email__icontains=search_query)
-            # Try to search in dynamic_data values
-            # SQLite JSON support might be limited for value search in some versions, 
-            # but usually regex or specific lookups work. 
-            # For simplicity in this env, we might iterate if db support is weak, 
-            # but assume standard Django JSONField lookup availability or do simple filtering.
-            # A simple implementation:
             queryset = queryset.filter(q)
 
         # 2. Dynamic Field Filtering (?Label=Value)
-        # Exclude reserved params
         reserved = ['search', 'page', 'limit']
         for key, value in self.request.query_params.items():
             if key not in reserved:
-                # Assuming dynamic_data is a dict 'Label': 'Value'
-                # Filter format: dynamic_data__Label__icontains=value
                 kwargs = {f"dynamic_data__{key}__icontains": value}
                 queryset = queryset.filter(**kwargs)
         

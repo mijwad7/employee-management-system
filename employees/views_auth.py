@@ -8,7 +8,6 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 
-# API Views
 
 class RegisterAPIView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -45,7 +44,6 @@ class ProfileAPIView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
-# Template Views (Serving the HTML pages)
 
 class LoginTemplateView(TemplateView):
     template_name = 'employees/login.html'
