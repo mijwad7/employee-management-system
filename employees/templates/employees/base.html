@@ -136,7 +136,9 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
-        button.btn {
+        .btn {
+            display: inline-block;
+            text-align: center;
             width: 100%;
             padding: 0.75rem;
             background-color: var(--primary);
@@ -145,21 +147,25 @@
             border-radius: var(--radius);
             font-weight: 600;
             cursor: pointer;
+            text-decoration: none;
             transition: background-color 0.2s;
+            font-size: 0.875rem;
         }
 
-        button.btn:hover {
+        .btn:hover {
             background-color: var(--primary-dark);
+            color: white;
         }
 
-        button.btn-secondary {
+        .btn-secondary {
             background-color: var(--surface);
             color: var(--text-main);
             border: 1px solid var(--border);
         }
 
-        button.btn-secondary:hover {
+        .btn-secondary:hover {
             background-color: var(--background);
+            color: var(--text-main);
         }
 
         .btn-sm {
@@ -210,11 +216,62 @@
         .mt-4 {
             margin-top: 1rem;
         }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 
 <body>
+    <!-- Global Confirm Modal -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="confirm-title" style="margin-bottom: 0.5rem;">Confirm Action</h3>
+            <p id="confirm-message" style="color: var(--text-muted);">Are you sure?</p>
+            <div class="modal-actions">
+                <button id="confirm-cancel" class="btn btn-secondary" style="width: auto;">Cancel</button>
+                <button id="confirm-ok" class="btn"
+                    style="width: auto; background-color: var(--danger);">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <h1>EMS</h1>
         <nav id="nav-links">
@@ -245,6 +302,37 @@
                 backgroundColor: bgStr,
                 stopOnFocus: true, // Prevents dismissing of toast on hover
             }).showToast();
+        }
+
+        // Global Confirm Helper
+        function showConfirm(message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            const msgEl = document.getElementById('confirm-message');
+            const okBtn = document.getElementById('confirm-ok');
+            const cancelBtn = document.getElementById('confirm-cancel');
+
+            msgEl.textContent = message;
+            modal.classList.add('active');
+
+            // Clean up previous listeners to avoid duplicates
+            const newOk = okBtn.cloneNode(true);
+            const newCancel = cancelBtn.cloneNode(true);
+            okBtn.parentNode.replaceChild(newOk, okBtn);
+            cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+            newOk.addEventListener('click', () => {
+                modal.classList.remove('active');
+                onConfirm();
+            });
+
+            newCancel.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+
+            // Close on outside click
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            };
         }
 
         if (token) {
