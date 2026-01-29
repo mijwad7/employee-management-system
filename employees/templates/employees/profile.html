@@ -1,0 +1,107 @@
+{% extends 'employees/base.html' %}
+
+{% block content %}
+<div class="container flex gap-4">
+    <!-- Profile Info -->
+    <div style="flex: 1;">
+        <div class="auth-container" style="max-width: 100%; margin: 0;">
+            <h2>User Profile</h2>
+            <div id="profile-loading">Loading...</div>
+            <div id="profile-content" style="display: none;">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div id="display-username" style="padding: 0.75rem; background: #f1f5f9; border-radius: 0.5rem;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <div id="display-email" style="padding: 0.75rem; background: #f1f5f9; border-radius: 0.5rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password -->
+    <div style="flex: 1;">
+        <div class="auth-container" style="max-width: 100%; margin: 0;">
+            <h2>Change Password</h2>
+            <div id="cp-message" class="error-msg"></div>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="old_password">Old Password</label>
+                    <input type="password" id="old_password" name="old_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" id="new_password" name="new_password" required>
+                </div>
+                <button type="submit" class="btn">Update Password</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const profileLoading = document.getElementById('profile-loading');
+    const profileContent = document.getElementById('profile-content');
+
+    // Load Profile Data
+    async function loadProfile() {
+        try {
+            const response = await axios.get('/api/profile/');
+            document.getElementById('display-username').textContent = response.data.username;
+            document.getElementById('display-email').textContent = response.data.email;
+            profileLoading.style.display = 'none';
+            profileContent.style.display = 'block';
+        } catch (error) {
+            console.error(error);
+            if (error.response && error.response.status === 401) {
+                window.location.href = '/login/';
+            } else {
+                profileLoading.textContent = 'Error loading profile.';
+            }
+        }
+    }
+
+    loadProfile();
+
+    // Change Password Handler
+    document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const old_password = document.getElementById('old_password').value;
+        const new_password = document.getElementById('new_password').value;
+        const message = document.getElementById('cp-message');
+
+        try {
+            const response = await axios.put('/api/change-password/', {
+                old_password: old_password,
+                new_password: new_password
+            });
+
+            message.className = 'success-msg';
+            message.textContent = 'Password changed successfully.';
+            document.getElementById('change-password-form').reset();
+
+        } catch (error) {
+            console.error(error);
+            if (error.response && error.response.data) {
+                let errorMsg = '';
+                for (const [key, value] of Object.entries(error.response.data)) {
+                    if (Array.isArray(value)) {
+                        errorMsg += `${value.join(' ')} `;
+                    } else {
+                        errorMsg += `${key}: ${value} `;
+                    }
+                }
+                message.className = 'error-msg';
+                message.textContent = errorMsg;
+            } else {
+                message.className = 'error-msg';
+                message.textContent = 'Failed to change password.';
+            }
+        }
+    });
+</script>
+{% endblock %}

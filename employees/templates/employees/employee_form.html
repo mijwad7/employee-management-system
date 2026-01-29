@@ -1,0 +1,161 @@
+{% extends 'employees/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 600px; margin: 0 auto;">
+        <h2 style="margin-bottom: 2rem;" id="page-title">Create Employee</h2>
+
+        <div id="loading-msg">Loading Form Schema...</div>
+
+        <form id="employee-form" style="display: none;">
+            <!-- Static Fields -->
+            <div class="auth-container" style="max-width: 100%; margin: 0; margin-bottom: 2rem;">
+                <h3>Basic Details</h3>
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+            </div>
+
+            <!-- Dynamic Fields -->
+            <div class="auth-container" style="max-width: 100%; margin: 0; margin-bottom: 2rem;">
+                <h3>Employee Details</h3>
+                <div id="dynamic-fields-container"></div>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn">Save Employee</button>
+                <a href="/employees/" class="btn btn-secondary"
+                    style="text-align: center; text-decoration: none;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const form = document.getElementById('employee-form');
+    const dynamicContainer = document.getElementById('dynamic-fields-container');
+    const loadingMsg = document.getElementById('loading-msg');
+    const pageTitle = document.getElementById('page-title');
+
+    // Check if editing
+    const pathParts = window.location.pathname.split('/');
+    // path might be /employees/new/ or /employees/123/edit/
+    const isEdit = window.location.pathname.includes('/edit/');
+    const employeeId = isEdit ? pathParts[pathParts.length - 3] : null; // Adjusted based on standard split behavior
+
+    let schemaFields = [];
+
+    async function init() {
+        try {
+            // 1. Fetch Schema
+            const schemaRes = await axios.get('/api/form-schema/');
+            schemaFields = schemaRes.data.schema_data || [];
+
+            renderDynamicFields();
+
+            // 2. If Edit, Fetch Employee Data
+            if (isEdit && employeeId) {
+                pageTitle.textContent = 'Edit Employee';
+                const empRes = await axios.get(`/api/employees/${employeeId}/`);
+                populateForm(empRes.data);
+            }
+
+            loadingMsg.style.display = 'none';
+            form.style.display = 'block';
+
+        } catch (error) {
+            console.error(error);
+            loadingMsg.textContent = 'Error loading data.';
+            if (error.response && error.response.status === 401) {
+                window.location.href = '/login/';
+            }
+        }
+    }
+
+    function renderDynamicFields() {
+        if (schemaFields.length === 0) {
+            dynamicContainer.innerHTML = '<p style="color: var(--text-muted);">No dynamic fields defined in Form Builder.</p>';
+            return;
+        }
+
+        schemaFields.forEach(field => {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+
+            const label = document.createElement('label');
+            label.textContent = field.label;
+            label.htmlFor = `dyn-${field.label}`; // Simple ID generation
+
+            let input = document.createElement('input');
+            input.id = `dyn-${field.label}`;
+            input.type = field.type;
+            // Handle specific types if needed, e.g. date formatting
+
+            // Tag input with data-label to identify it easily later
+            input.dataset.dynamicLabel = field.label;
+
+            group.appendChild(label);
+            group.appendChild(input);
+            dynamicContainer.appendChild(group);
+        });
+    }
+
+    function populateForm(data) {
+        document.getElementById('name').value = data.name;
+        document.getElementById('email').value = data.email;
+
+        // Populate dynamic fields
+        if (data.dynamic_data) {
+            for (const [label, value] of Object.entries(data.dynamic_data)) {
+                const input = document.querySelector(`[data-dynamic-label="${label}"]`);
+                if (input) {
+                    input.value = value;
+                }
+            }
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const dynamicData = {};
+
+        // Collect dynamic values
+        const dynamicInputs = document.querySelectorAll('[data-dynamic-label]');
+        dynamicInputs.forEach(input => {
+            dynamicData[input.dataset.dynamicLabel] = input.value;
+        });
+
+        const payload = {
+            name,
+            email,
+            dynamic_data: dynamicData
+        };
+
+        try {
+            if (isEdit) {
+                await axios.put(`/api/employees/${employeeId}/`, payload);
+                alert('Employee updated successfully');
+            } else {
+                await axios.post('/api/employees/', payload);
+                alert('Employee created successfully');
+            }
+            window.location.href = '/employees/';
+        } catch (error) {
+            console.error(error);
+            alert('Failed to save employee.');
+        }
+    });
+
+    init();
+</script>
+{% endblock %}

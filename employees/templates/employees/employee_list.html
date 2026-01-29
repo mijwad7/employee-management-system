@@ -1,0 +1,197 @@
+{% extends 'employees/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <h2>Employees</h2>
+        <a href="/employees/new/" class="btn" style="width: auto;">Create Employee</a>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="auth-container" style="max-width: 100%; margin: 0; margin-bottom: 2rem; padding: 1.5rem;">
+        <form id="filter-form" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                <label>Search (Name/Email)</label>
+                <input type="text" id="search-input" placeholder="Search...">
+            </div>
+            <!-- Dynamic Filters Container -->
+            <div id="dynamic-filters" style="display: contents;"></div>
+
+            <button type="submit" class="btn btn-secondary" style="width: auto; margin-bottom: 1px;">Filter</button>
+            <button type="button" id="clear-btn" class="btn btn-secondary"
+                style="width: auto; margin-bottom: 1px;">Clear</button>
+        </form>
+    </div>
+
+    <!-- Employee Table -->
+    <div style="overflow-x: auto;">
+        <table
+            style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);">
+            <thead style="background: #f1f5f9; border-bottom: 1px solid var(--border);">
+                <tr id="table-head-row">
+                    <th style="padding: 1rem; text-align: left;">Name</th>
+                    <th style="padding: 1rem; text-align: left;">Email</th>
+                    <!-- Dynamic Headers injected here -->
+                    <th style="padding: 1rem; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr>
+                    <td colspan="5" style="padding: 2rem; text-align: center;">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination (Simple) -->
+    <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem;" id="pagination">
+        <!-- Next/Prev handling could be added here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const tableHeadRow = document.getElementById('table-head-row');
+    const tableBody = document.getElementById('table-body');
+    const dynamicFilters = document.getElementById('dynamic-filters');
+    const filterForm = document.getElementById('filter-form');
+
+    let schemaFields = [];
+
+    async function init() {
+        try {
+            const schemaRes = await axios.get('/api/form-schema/');
+            schemaFields = schemaRes.data.schema_data || [];
+
+            setupFiltersAndHeaders();
+            loadEmployees();
+
+        } catch (error) {
+            console.error(error);
+            if (error.response && error.response.status === 401) {
+                window.location.href = '/login/';
+            }
+        }
+    }
+
+    function setupFiltersAndHeaders() {
+        // Headers
+        // Insert dynamic headers before the last column (Actions)
+        const actionsTh = tableHeadRow.lastElementChild;
+
+        schemaFields.forEach(field => {
+            // Header
+            const th = document.createElement('th');
+            th.style.padding = '1rem';
+            th.style.textAlign = 'left';
+            th.textContent = field.label;
+            tableHeadRow.insertBefore(th, actionsTh);
+
+            // Filter Input
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            group.style.marginBottom = '0';
+            group.style.flex = '1';
+            group.style.minWidth = '150px';
+
+            group.innerHTML = `
+                <label>${field.label}</label>
+                <input type="text" data-filter-key="${field.label}" placeholder="Filter ${field.label}">
+            `;
+            dynamicFilters.appendChild(group);
+        });
+    }
+
+    async function loadEmployees(params = {}) {
+        tableBody.innerHTML = '<tr><td colspan="100%" style="padding: 2rem; text-align: center;">Loading...</td></tr>';
+
+        try {
+            // Build query params
+            const query = new URLSearchParams(params).toString();
+            const url = `/api/employees/?${query}`;
+
+            const response = await axios.get(url);
+            const employees = response.data.results ? response.data.results : response.data; // Handle pagination structure if generic list view is plain list
+
+            renderTable(employees);
+        } catch (error) {
+            console.error(error);
+            tableBody.innerHTML = '<tr><td colspan="100%" style="padding: 2rem; text-align: center; color: var(--danger);">Error loading employees.</td></tr>';
+        }
+    }
+
+    function renderTable(employees) {
+        if (employees.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="100%" style="padding: 2rem; text-align: center;">No employees found.</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        employees.forEach(emp => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid var(--border)';
+
+            // Basic Fields
+            let html = `
+                <td style="padding: 1rem;">${emp.name}</td>
+                <td style="padding: 1rem;">${emp.email}</td>
+            `;
+
+            // Dynamic Fields
+            schemaFields.forEach(field => {
+                const val = (emp.dynamic_data && emp.dynamic_data[field.label]) ? emp.dynamic_data[field.label] : '-';
+                html += `<td style="padding: 1rem;">${val}</td>`;
+            });
+
+            // Actions
+            html += `
+                <td style="padding: 1rem; text-align: right;">
+                    <a href="/employees/${emp.id}/edit/" class="btn btn-secondary btn-sm" style="text-decoration:none;">Edit</a>
+                    <button class="btn btn-secondary btn-sm" style="background:none; border:none; color:var(--danger);" onclick="deleteEmployee(${emp.id})">Delete</button>
+                </td>
+            `;
+
+            tr.innerHTML = html;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    window.deleteEmployee = async (id) => {
+        if (!confirm('Are you sure you want to delete this employee?')) return;
+        try {
+            await axios.delete(`/api/employees/${id}/`);
+            loadEmployees(getCurrentFilters());
+        } catch (error) {
+            console.error(error);
+            alert('Failed to delete employee.');
+        }
+    };
+
+    function getCurrentFilters() {
+        const params = {};
+        const search = document.getElementById('search-input').value;
+        if (search) params.search = search;
+
+        const dynamicInputs = document.querySelectorAll('[data-filter-key]');
+        dynamicInputs.forEach(input => {
+            if (input.value) {
+                params[input.dataset.filterKey] = input.value;
+            }
+        });
+        return params;
+    }
+
+    filterForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        loadEmployees(getCurrentFilters());
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+        document.getElementById('filter-form').reset();
+        loadEmployees();
+    });
+
+    init();
+</script>
+{% endblock %}

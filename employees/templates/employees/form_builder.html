@@ -1,0 +1,296 @@
+{% extends 'employees/base.html' %}
+
+{% block extra_head %}
+<!-- SortableJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<style>
+    .builder-container {
+        display: flex;
+        gap: 2rem;
+        align-items: flex-start;
+    }
+
+    .field-list {
+        flex: 2;
+        background: var(--surface);
+        padding: 1rem;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        min-height: 200px;
+    }
+
+    .controls {
+        flex: 1;
+        background: var(--surface);
+        padding: 1rem;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        position: sticky;
+        top: 1rem;
+    }
+
+    .field-item {
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: var(--radius);
+        cursor: grab;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .field-item:active {
+        cursor: grabbing;
+        transform: scale(1.01);
+        box-shadow: var(--shadow);
+    }
+
+    .field-info strong {
+        display: block;
+        color: var(--text-main);
+    }
+
+    .field-info span {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .remove-btn {
+        color: var(--danger);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        font-weight: 600;
+    }
+
+    .remove-btn:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <h2>Form Builder</h2>
+        <button id="save-schema-btn" class="btn" style="width: auto;">Save Form Design</button>
+    </div>
+
+    <div class="builder-container">
+        <!-- Rendered Fields List -->
+        <div class="field-list">
+            <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-muted);">Form Fields (Drag to reorder)
+            </h3>
+            <div id="fields-container">
+                <!-- Fields will be injected here -->
+                <div style="padding: 2rem; text-align: center; color: var(--text-muted);" id="empty-msg">
+                    No fields added yet. Add a field from the panel.
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Field Controls -->
+        <div class="controls">
+            <h3 style="margin-bottom: 1.5rem;">Add New Field</h3>
+            <form id="add-field-form">
+                <div class="form-group">
+                    <label>Label</label>
+                    <input type="text" id="new-field-label" placeholder="e.g. Employee ID" required>
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="new-field-type" required>
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="password">Password</option>
+                        <option value="email">Email</option>
+                    </select>
+                </div>
+                <!-- maybe require checkbox later -->
+                <button type="submit" class="btn btn-secondary" style="width: 100%;">Add Field</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const fieldsContainer = document.getElementById('fields-container');
+    const emptyMsg = document.getElementById('empty-msg');
+    const saveBtn = document.getElementById('save-schema-btn');
+
+    // State to hold fields
+    let fields = [];
+
+    // Initialize Sortable
+    new Sortable(fieldsContainer, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function () {
+            // Update fields array based on new DOM order
+            updateFieldsFromDOM();
+        }
+    });
+
+    // Load initial schema
+    async function loadSchema() {
+        try {
+            const response = await axios.get('/api/form-schema/');
+            if (response.data && response.data.schema_data) {
+                fields = response.data.schema_data;
+                renderFields();
+            }
+        } catch (error) {
+            console.error(error);
+            if (error.response && error.response.status === 401) {
+                window.location.href = '/login/';
+            }
+        }
+    }
+
+    function renderFields() {
+        fieldsContainer.innerHTML = '';
+        if (fields.length === 0) {
+            fieldsContainer.appendChild(emptyMsg);
+            emptyMsg.style.display = 'block';
+            return;
+        }
+        emptyMsg.style.display = 'none'; // Hide if we have fields but just not rendered yet logically
+
+        fields.forEach((field, index) => {
+            const item = document.createElement('div');
+            item.className = 'field-item';
+            item.dataset.index = index; // Keep track of original index if needed, but DOM order matters more
+            item.innerHTML = `
+                <div class="field-info">
+                    <strong>${field.label}</strong>
+                    <span>${field.type}</span>
+                </div>
+                <button class="remove-btn" onclick="removeField(${index})">Remove</button>
+            `;
+            fieldsContainer.appendChild(item);
+        });
+    }
+
+    function removeField(index) {
+        fields.splice(index, 1);
+        renderFields();
+    }
+
+    // Use window scope for inline onclick, or addEventListener delegation
+    window.removeField = removeField;
+
+    document.getElementById('add-field-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const label = document.getElementById('new-field-label').value;
+        const type = document.getElementById('new-field-type').value;
+
+        fields.push({ label, type });
+        renderFields();
+
+        // Reset form
+        document.getElementById('new-field-label').value = '';
+        document.getElementById('new-field-type').value = 'text';
+    });
+
+    function updateFieldsFromDOM() {
+        const newFields = [];
+        const items = fieldsContainer.children;
+        for (let item of items) {
+            // We need to reconstruct the objects. 
+            // Since we just rendered them, we can rely on text content or storing data attributes.
+            // Better: Let's store the full object in a data attribute json string
+            // Actually, simplest is to just rely on the 'fields' array but reordered. 
+            // BUT wait, splicing changes the array. Dragging changes the DOM but not the array. 
+            // So when dragging ends, we must rebuild the array from the DOM.
+            // Let's store the JSON in the DOM element to be safe.
+        }
+
+        // Re-implement render to store data
+    }
+
+    // Better Rendering Logic for Reordering Support
+    // We will attach the data object to the DOM element property
+    const originalRender = renderFields;
+    renderFields = function () {
+        fieldsContainer.innerHTML = '';
+        if (fields.length === 0) {
+            fieldsContainer.appendChild(emptyMsg);
+            emptyMsg.style.display = 'block';
+            return;
+        }
+
+        fields.forEach((field, index) => {
+            const item = document.createElement('div');
+            item.className = 'field-item';
+            item.innerHTML = `
+                <div class="field-info">
+                    <strong>${field.label}</strong>
+                    <span>${field.type}</span>
+                </div>
+                <button class="remove-btn">Remove</button>
+            `;
+
+            // Attach data
+            item.fieldData = field;
+
+            // Remove handler
+            item.querySelector('.remove-btn').addEventListener('click', () => {
+                // Find current index in DOM
+                const currentItems = Array.from(fieldsContainer.children);
+                const idx = currentItems.indexOf(item);
+                if (idx > -1) {
+                    fields.splice(idx, 1);
+                    item.remove();
+                    if (fields.length === 0) {
+                        fieldsContainer.appendChild(emptyMsg);
+                        emptyMsg.style.display = 'block';
+                    }
+                }
+            });
+
+            fieldsContainer.appendChild(item);
+        });
+    }
+
+    saveBtn.addEventListener('click', async () => {
+        // Build schema from current DOM order
+        const currentFields = [];
+        const items = Array.from(fieldsContainer.children);
+
+        items.forEach(item => {
+            if (item.id !== 'empty-msg') {
+                currentFields.push(item.fieldData);
+            }
+        });
+
+        if (currentFields.length === 0) {
+            alert("Process failed: No fields to save.");
+            return;
+        }
+
+        try {
+            await axios.post('/api/form-schema/', {
+                name: "Employee Form Current", // Single form for now
+                schema_data: currentFields
+            });
+            alert('Form design saved successfully!');
+        } catch (error) {
+            console.error(error);
+            alert('Failed to save form design.');
+        }
+    });
+
+    loadSchema();
+
+</script>
+{% endblock %}
