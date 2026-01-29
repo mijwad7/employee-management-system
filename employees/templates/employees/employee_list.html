@@ -28,7 +28,7 @@
                 <tr id="table-head-row">
                     <th style="padding: 1rem; text-align: left;">Name</th>
                     <th style="padding: 1rem; text-align: left;">Email</th>
-                    <th style="padding: 1rem; text-align: right;">Actions</th>
+                    <th style="padding: 1rem; text-align: left;">Actions</th>
                 </tr>
             </thead>
             <tbody id="table-body">
@@ -139,8 +139,8 @@
 
             // Actions
             html += `
-                <td style="padding: 1rem; text-align: right; white-space: nowrap; width: 1%;">
-                    <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                <td style="padding: 1rem; text-align: left; white-space: nowrap; width: 1%;">
+                    <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-start; align-items: center;">
                         <a href="/employees/${emp.id}/edit/" class="btn btn-secondary btn-sm" style="text-decoration:none; display: inline-flex; align-items: center; justify-content: center; height: 32px; min-width: 60px; border: 1px solid var(--primary); color: var(--primary); background: transparent;">Edit</a>
                         <button class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; justify-content: center; height: 32px; min-width: 70px; border: 1px solid var(--danger); color: var(--danger); background: transparent;" onclick="deleteEmployee(${emp.id})">Delete</button>
                     </div>
