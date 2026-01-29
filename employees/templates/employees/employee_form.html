@@ -144,15 +144,17 @@
         try {
             if (isEdit) {
                 await axios.put(`/api/employees/${employeeId}/`, payload);
-                alert('Employee updated successfully');
+                showToast('Employee updated successfully', 'success');
             } else {
                 await axios.post('/api/employees/', payload);
-                alert('Employee created successfully');
+                showToast('Employee created successfully', 'success');
             }
-            window.location.href = '/employees/';
+            setTimeout(() => {
+                window.location.href = '/employees/';
+            }, 1000);
         } catch (error) {
             console.error(error);
-            alert('Failed to save employee.');
+            showToast('Failed to save employee.', 'error');
         }
     });
 

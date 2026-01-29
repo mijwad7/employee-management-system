@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- Toastify -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <style>
         :root {
             --primary: #4f46e5;
@@ -227,6 +230,23 @@
         const token = localStorage.getItem('access_token');
         const nav = document.getElementById('nav-links');
 
+        // Toast Helper
+        function showToast(message, type = 'info') {
+            let bgStr = "#4f46e5"; // primary
+            if (type === 'error') bgStr = "#ef4444";
+            if (type === 'success') bgStr = "#22c55e";
+
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top", // `top` or `bottom`
+                position: "right", // `left`, `center` or `right`
+                backgroundColor: bgStr,
+                stopOnFocus: true, // Prevents dismissing of toast on hover
+            }).showToast();
+        }
+
         if (token) {
             nav.innerHTML = `
                 <a href="/employees/">Employees</a>
@@ -243,8 +263,49 @@
 
             // Setup Axios Interceptors
             axios.interceptors.request.use(function (config) {
-                config.headers.Authorization = 'Bearer ' + token;
+                const currentToken = localStorage.getItem('access_token');
+                if (currentToken) {
+                    config.headers.Authorization = 'Bearer ' + currentToken;
+                }
                 return config;
+            }, function (error) {
+                return Promise.reject(error);
+            });
+
+            axios.interceptors.response.use(function (response) {
+                return response;
+            }, async function (error) {
+                const originalRequest = error.config;
+
+                // If 401 and not already retrying
+                if (error.response && error.response.status === 401 && !originalRequest._retry) {
+                    originalRequest._retry = true;
+                    const refreshToken = localStorage.getItem('refresh_token');
+
+                    if (refreshToken) {
+                        try {
+                            const res = await axios.post('/api/token/refresh/', {
+                                refresh: refreshToken
+                            });
+
+                            if (res.status === 200) {
+                                localStorage.setItem('access_token', res.data.access);
+                                axios.defaults.headers.common['Authorization'] = 'Bearer ' + res.data.access;
+                                originalRequest.headers['Authorization'] = 'Bearer ' + res.data.access;
+                                return axios(originalRequest);
+                            }
+                        } catch (refreshError) {
+                            console.error("Token refresh failed", refreshError);
+                            // Clear tokens and redirect
+                            localStorage.removeItem('access_token');
+                            localStorage.removeItem('refresh_token');
+                            window.location.href = '/login/';
+                        }
+                    } else {
+                        window.location.href = '/login/';
+                    }
+                }
+                return Promise.reject(error);
             });
 
         } else {

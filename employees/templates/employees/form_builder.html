@@ -274,7 +274,7 @@
         });
 
         if (currentFields.length === 0) {
-            alert("Process failed: No fields to save.");
+            showToast("Process failed: No fields to save.", 'error');
             return;
         }
 
@@ -283,10 +283,10 @@
                 name: "Employee Form Current", // Single form for now
                 schema_data: currentFields
             });
-            alert('Form design saved successfully!');
+            showToast('Form design saved successfully!', 'success');
         } catch (error) {
             console.error(error);
-            alert('Failed to save form design.');
+            showToast('Failed to save form design.', 'error');
         }
     });
 
