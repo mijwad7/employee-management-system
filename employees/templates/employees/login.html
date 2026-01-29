@@ -38,7 +38,7 @@
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
 
-            window.location.href = '/profile/'; // Redirect to profile or dashboard
+            window.location.href = '/profile/';
 
         } catch (error) {
             console.error(error);

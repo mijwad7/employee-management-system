@@ -275,7 +275,6 @@
     <header>
         <h1>EMS</h1>
         <nav id="nav-links">
-            <!-- Dynamic Navigation populated by JS -->
         </nav>
     </header>
     <main>
@@ -283,13 +282,11 @@
     </main>
 
     <script>
-        // Global Auth Logic
         const token = localStorage.getItem('access_token');
         const nav = document.getElementById('nav-links');
 
-        // Toast Helper
         function showToast(message, type = 'info') {
-            let bgStr = "#4f46e5"; // primary
+            let bgStr = "#4f46e5";
             if (type === 'error') bgStr = "#ef4444";
             if (type === 'success') bgStr = "#22c55e";
 
@@ -297,14 +294,13 @@
                 text: message,
                 duration: 3000,
                 close: true,
-                gravity: "top", // `top` or `bottom`
-                position: "right", // `left`, `center` or `right`
+                gravity: "top",
+                position: "right",
                 backgroundColor: bgStr,
-                stopOnFocus: true, // Prevents dismissing of toast on hover
+                stopOnFocus: true,
             }).showToast();
         }
 
-        // Global Confirm Helper
         function showConfirm(message, onConfirm) {
             const modal = document.getElementById('confirm-modal');
             const msgEl = document.getElementById('confirm-message');
@@ -314,7 +310,6 @@
             msgEl.textContent = message;
             modal.classList.add('active');
 
-            // Clean up previous listeners to avoid duplicates
             const newOk = okBtn.cloneNode(true);
             const newCancel = cancelBtn.cloneNode(true);
             okBtn.parentNode.replaceChild(newOk, okBtn);
@@ -329,7 +324,6 @@
                 modal.classList.remove('active');
             });
 
-            // Close on outside click
             modal.onclick = (e) => {
                 if (e.target === modal) modal.classList.remove('active');
             };
@@ -349,7 +343,6 @@
                 window.location.href = '/login/';
             });
 
-            // Setup Axios Interceptors
             axios.interceptors.request.use(function (config) {
                 const currentToken = localStorage.getItem('access_token');
                 if (currentToken) {
@@ -365,7 +358,6 @@
             }, async function (error) {
                 const originalRequest = error.config;
 
-                // If 401 and not already retrying
                 if (error.response && error.response.status === 401 && !originalRequest._retry) {
                     originalRequest._retry = true;
                     const refreshToken = localStorage.getItem('refresh_token');
@@ -384,7 +376,6 @@
                             }
                         } catch (refreshError) {
                             console.error("Token refresh failed", refreshError);
-                            // Clear tokens and redirect
                             localStorage.removeItem('access_token');
                             localStorage.removeItem('refresh_token');
                             window.location.href = '/login/';

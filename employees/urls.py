@@ -12,7 +12,7 @@ from .views_employee import (
     EmployeeListCreateAPIView, EmployeeDetailAPIView,
     EmployeeListTemplateView, EmployeeFormTemplateView
 )
-from . import views  # import generic views if any
+from . import views
 
 urlpatterns = [
     # API endpoints

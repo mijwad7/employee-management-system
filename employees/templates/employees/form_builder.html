@@ -84,19 +84,16 @@
     </div>
 
     <div class="builder-container">
-        <!-- Rendered Fields List -->
         <div class="field-list">
             <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-muted);">Form Fields (Drag to reorder)
             </h3>
             <div id="fields-container">
-                <!-- Fields will be injected here -->
                 <div style="padding: 2rem; text-align: center; color: var(--text-muted);" id="empty-msg">
                     No fields added yet. Add a field from the panel.
                 </div>
             </div>
         </div>
 
-        <!-- Add Field Controls -->
         <div class="controls">
             <h3 style="margin-bottom: 1.5rem;">Add New Field</h3>
             <form id="add-field-form">
@@ -114,7 +111,6 @@
                         <option value="email">Email</option>
                     </select>
                 </div>
-                <!-- maybe require checkbox later -->
                 <button type="submit" class="btn btn-secondary" style="width: 100%;">Add Field</button>
             </form>
         </div>
@@ -128,20 +124,15 @@
     const emptyMsg = document.getElementById('empty-msg');
     const saveBtn = document.getElementById('save-schema-btn');
 
-    // State to hold fields
     let fields = [];
 
-    // Initialize Sortable
     new Sortable(fieldsContainer, {
         animation: 150,
         ghostClass: 'sortable-ghost',
         onEnd: function () {
-            // Update fields array based on new DOM order
             updateFieldsFromDOM();
         }
     });
-
-    // Load initial schema
     async function loadSchema() {
         try {
             const response = await axios.get('/api/form-schema/');
@@ -164,12 +155,12 @@
             emptyMsg.style.display = 'block';
             return;
         }
-        emptyMsg.style.display = 'none'; // Hide if we have fields but just not rendered yet logically
+        emptyMsg.style.display = 'none';
 
         fields.forEach((field, index) => {
             const item = document.createElement('div');
             item.className = 'field-item';
-            item.dataset.index = index; // Keep track of original index if needed, but DOM order matters more
+            item.dataset.index = index;
             item.innerHTML = `
                 <div class="field-info">
                     <strong>${field.label}</strong>
@@ -186,7 +177,6 @@
         renderFields();
     }
 
-    // Use window scope for inline onclick, or addEventListener delegation
     window.removeField = removeField;
 
     document.getElementById('add-field-form').addEventListener('submit', (e) => {
@@ -197,7 +187,6 @@
         fields.push({ label, type });
         renderFields();
 
-        // Reset form
         document.getElementById('new-field-label').value = '';
         document.getElementById('new-field-type').value = 'text';
     });
@@ -213,8 +202,6 @@
         fields = newFields;
     }
 
-    // Better Rendering Logic for Reordering Support
-    // We will attach the data object to the DOM element property
     const originalRender = renderFields;
     renderFields = function () {
         fieldsContainer.innerHTML = '';
@@ -235,12 +222,9 @@
                 <button class="remove-btn">Remove</button>
             `;
 
-            // Attach data
             item.fieldData = field;
 
-            // Remove handler
             item.querySelector('.remove-btn').addEventListener('click', () => {
-                // Find current index in DOM
                 const currentItems = Array.from(fieldsContainer.children);
                 const idx = currentItems.indexOf(item);
                 if (idx > -1) {
@@ -258,7 +242,6 @@
     }
 
     saveBtn.addEventListener('click', async () => {
-        // Build schema from current DOM order
         const currentFields = [];
         const items = Array.from(fieldsContainer.children);
 

@@ -16,7 +16,6 @@ class EmployeeListCreateAPIView(generics.ListCreateAPIView):
         # 1. Generic Search (?search=value)
         search_query = self.request.query_params.get('search', None)
         if search_query:
-            # Search in name, email
             q = Q(name__icontains=search_query) | Q(email__icontains=search_query)
             queryset = queryset.filter(q)
 

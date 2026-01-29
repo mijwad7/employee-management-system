@@ -7,14 +7,12 @@
         <a href="/employees/new/" class="btn" style="width: auto;">Create Employee</a>
     </div>
 
-    <!-- Search & Filters -->
     <div class="auth-container" style="max-width: 100%; margin: 0; margin-bottom: 2rem; padding: 1.5rem;">
         <form id="filter-form" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
             <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
                 <label>Search (Name/Email)</label>
                 <input type="text" id="search-input" placeholder="Search...">
             </div>
-            <!-- Dynamic Filters Container -->
             <div id="dynamic-filters" style="display: contents;"></div>
 
             <button type="submit" class="btn btn-secondary" style="width: auto; margin-bottom: 1px;">Filter</button>
@@ -23,7 +21,6 @@
         </form>
     </div>
 
-    <!-- Employee Table -->
     <div style="overflow-x: auto;">
         <table
             style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);">
@@ -31,7 +28,6 @@
                 <tr id="table-head-row">
                     <th style="padding: 1rem; text-align: left;">Name</th>
                     <th style="padding: 1rem; text-align: left;">Email</th>
-                    <!-- Dynamic Headers injected here -->
                     <th style="padding: 1rem; text-align: right;">Actions</th>
                 </tr>
             </thead>
@@ -43,9 +39,7 @@
         </table>
     </div>
 
-    <!-- Pagination (Simple) -->
     <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem;" id="pagination">
-        <!-- Next/Prev handling could be added here -->
     </div>
 </div>
 {% endblock %}

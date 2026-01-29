@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container flex gap-4">
-    <!-- Profile Info -->
     <div style="flex: 1;">
         <div class="auth-container" style="max-width: 100%; margin: 0;">
             <h2>User Profile</h2>
@@ -21,7 +20,6 @@
         </div>
     </div>
 
-    <!-- Change Password -->
     <div style="flex: 1;">
         <div class="auth-container" style="max-width: 100%; margin: 0;">
             <h2>Change Password</h2>
@@ -47,7 +45,6 @@
     const profileLoading = document.getElementById('profile-loading');
     const profileContent = document.getElementById('profile-content');
 
-    // Load Profile Data
     async function loadProfile() {
         try {
             const response = await axios.get('/api/profile/');
@@ -67,7 +64,6 @@
 
     loadProfile();
 
-    // Change Password Handler
     document.getElementById('change-password-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const old_password = document.getElementById('old_password').value;

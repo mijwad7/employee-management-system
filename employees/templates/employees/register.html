@@ -52,7 +52,6 @@
                 password_confirm: password_confirm
             });
 
-            // Auto login or redirect to login
             message.className = 'success-msg';
             message.textContent = 'Registration successful! Redirecting to login...';
             setTimeout(() => {
@@ -62,7 +61,6 @@
         } catch (error) {
             console.error(error);
             if (error.response && error.response.data) {
-                // Format errors
                 let errorMsg = '';
                 for (const [key, value] of Object.entries(error.response.data)) {
                     errorMsg += `${key}: ${value} `;
